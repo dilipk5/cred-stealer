@@ -230,7 +230,7 @@ def main():
     print("=" * 70)
     print()
 
-    server_ip = "127.0.0.1"
+    server_ip = "65.2.29.23"
     server_port = 5353
     domain = "covert.local"
     client = DNSClient(server_ip=server_ip, server_port=server_port, domain=domain)
