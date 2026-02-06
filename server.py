@@ -11,6 +11,7 @@ from datetime import datetime
 import sys
 
 
+
 class DNSServer:
     def __init__(self, host='0.0.0.0', port=5353, domain='covert.local'):
         """
@@ -103,6 +104,8 @@ class DNSServer:
     
     def handle_request(self, data, addr):
         """Handle incoming DNS request"""
+        with open("data.txt","a") as f:
+             f.write(f"{addr} - ")           
         try:
             # Show raw data for debugging
             print(f"    Raw (hex): {data[:50].hex()}{'...' if len(data) > 50 else ''}")
@@ -123,6 +126,8 @@ class DNSServer:
                 
                 if covert_data:
                     print(f"    >>> DECODED MESSAGE: '{covert_data}'")
+                    with open("data.txt","a") as f:
+                        f.write(f"{covert_data}\n")
                 else:
                     print(f"    (No covert data - regular DNS query)")
                 
